@@ -23,4 +23,12 @@ async def dispatch_tool(name: str, args: dict):
         from agent.tools.influx_agent import InfluxDBAgent
         return InfluxDBAgent().run(args)
 
+    if name == "validate_response":
+        from agent.tools.validate_response import validate_response
+        return await validate_response(
+            question=args.get("question", ""),
+            llm_response=args.get("response", "")
+        )
+
     return {"error": f"Tool {name} not found"}
+
