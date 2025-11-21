@@ -1,1 +1,60 @@
 Code for the Database Agent
+
+
+# influx_agent.py
+import os
+from influxdb_client import InfluxDBClient
+from influxdb_client.client.query_api import QueryApi
+
+INFLUX_URL = os.getenv("INFLUX_URL","http://localhost:8086")
+INFLUX_TOKEN = os.getenv("INFLUX_TOKEN","token")
+INFLUX_ORG = os.getenv("INFLUX_ORG","org")
+INFLUX_BUCKET = os.getenv("INFLUX_BUCKET","bucket")
+
+class InfluxDBAgent:
+    def __init__(self):
+        self.client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
+        self.query_api = self.client.query_api()
+
+    def build_query(self, text: str) -> str:
+        t = text.lower()
+        if "average" in t or "mean" in t:
+            return f'''
+from(bucket: "{INFLUX_BUCKET}")
+  |> range(start: -24h)
+  |> filter(fn: (r) => r["_field"] == "value")
+  |> mean()
+'''
+        if "last" in t and "hour" in t:
+            return f'''
+from(bucket: "{INFLUX_BUCKET}")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r["_field"] == "value")
+  |> last()
+'''
+        raise ValueError("Cannot build flux query from text")
+
+    def execute_query(self, flux: str):
+        res = self.query_api.query(org=INFLUX_ORG, query=flux)
+        rows=[]
+        for table in res:
+            for record in table.records:
+                rows.append({
+                    "time": record.get_time().isoformat(),
+                    "value": record.get_value(),
+                    "measurement": record.get_measurement(),
+                    "field": record.get_field()
+                })
+        return rows
+
+    def run(self, context: dict):
+        text = context.get("text","")
+        try:
+            flux = self.build_query(text)
+        except ValueError as e:
+            return {"error": str(e)}
+        try:
+            rows = self.execute_query(flux)
+        except Exception as e:
+            return {"error": f"query error: {e}"}
+        return {"rows": rows, "count": len(rows)}
