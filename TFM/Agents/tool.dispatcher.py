@@ -1,29 +1,27 @@
 # tool_dispatcher.py
-from agent.tools.translate_query import translate_query
-from agent.tools.run_query import run_query
-from agent.tools.calc_stats import calc_stats
-from agent.tools.influx_agent import InfluxDBAgent
-import asyncio
 
-async def dispatch_tool(name: str, args: dict):
 
-    if name == "calculator":
-        from agent.tools.calculator_agent import calculator_tool
-        return calculator_tool(args.get("expression"))
+from agent.tools.calculator import CalculatorAgent
+from agent.tools.db_agent import DBQueryAgent
+from agent.tools.influx_agent import InfluxAgent
+from agent.tools.query_agent import QueryAgent
+from agent.tools.validator_agent import ValidatorAgent
 
-    if name == "influxdb_query":
-        from agent.tools.influxdb_agent import influxdb_query
-        return await influxdb_query(**args)
+class ToolDispatcher:
+    def __init__(self):
+        self.tools = {
+            "calculator": CalculatorAgent(),
+            "query_db": DBQueryAgent(),
+            "influx": InfluxAgent(),
+            "transform_query": QueryAgent(),
+            "validate": ValidatorAgent()
+        }
 
-    if name == "query_agent":
-        from agent.tools.query_agent import execute_structured_query
-        return await execute_structured_query(**args)
+    async def dispatch(self, tool_name: str, query: str):
+        tool_name = tool_name.strip().lower()
 
-    if name == "validate_response":
-        from agent.tools.validate_response import validate_response
-        return await validate_response(
-            question=args.get("question", ""),
-            llm_response=args.get("response", "")
-        )
+        if tool_name not in self.tools:
+            return f"Unknown tool: {tool_name}"
 
-    return {"error": f"unknown tool {name}"}
+        return await self.tools[tool_name].run(query)
+
