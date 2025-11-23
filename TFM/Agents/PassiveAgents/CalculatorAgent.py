@@ -1,25 +1,38 @@
-Code for the calculator Agent
+# Code for the calculator Agent
 
+import ast
+import operator
 
-# calc_stats.py
-import numpy as np
+class CalculatorAgent:
+    def __init__(self):
+        self.ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg
+        }
 
-def calc_stats(operation: str, values):
-    arr = np.array(values, dtype=float)
+    async def run(self, query: str):
+        try:
+            result = self._safe_eval(query)
+            return {"result": result}
+        except Exception as e:
+            return {"error": f"Calculation failed: {str(e)}"}
 
-    if operation == "mean":
-        return {"mean": float(arr.mean())}
+    def _safe_eval(self, expr):
+        node = ast.parse(expr, mode="eval")
 
-    if operation == "sum":
-        return {"sum": float(arr.sum())}
+        def _eval(n):
+            if isinstance(n, ast.Expression):
+                return _eval(n.body)
+            if isinstance(n, ast.Num):
+                return n.value
+            if isinstance(n, ast.BinOp):
+                return self.ops[type(n.op)](_eval(n.left), _eval(n.right))
+            if isinstance(n, ast.UnaryOp):
+                return self.ops[type(n.op)](_eval(n.operand))
+            raise ValueError("Unsupported expression")
 
-    if operation == "max":
-        return {"max": float(arr.max())}
-
-    if operation == "min":
-        return {"min": float(arr.min())}
-
-    if operation == "std":
-        return {"std": float(arr.std())}
-
-    return {"error": "Operación desconocida"}
+        return _eval(node.body)
