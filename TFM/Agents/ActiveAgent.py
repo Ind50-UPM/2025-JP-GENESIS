@@ -7,11 +7,11 @@ class CorePlanner:
         self.dispatcher = dispatcher
 
     async def process(self, query: str):
-        # Step 1 - ask the LLM what tool should be used
+        # Preguntar al LLM cuál herramienta debe ser usada
         tool_instruction = await self.llm.ask(
-            f"You are a planner. Given the query: '{query}', "
-            "decide which tool to use: calculator, query_db, influx, or validate. "
-            "Respond ONLY with the tool name."
+            f"Eres un administrador encargado de planificaciones. Dada la query: '{query}', "
+            "decide cuál herramienta se debe usar: calculatoragent, agentdb, queryagent, influxdbagent, o verifieragent. "
+            "Responde solo con el nombre de la herramienta."
         )
 
         response = await self.dispatcher.dispatch(tool_instruction, query)
