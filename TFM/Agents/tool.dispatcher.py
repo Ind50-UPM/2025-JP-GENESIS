@@ -21,7 +21,7 @@ class ToolDispatcher:
         tool_name = tool_name.strip().lower()
 
         if tool_name not in self.tools:
-            return f"Unknown tool: {tool_name}"
+            return f"Herramienta no registrada: {tool_name}"
 
         return await self.tools[tool_name].run(query)
 
