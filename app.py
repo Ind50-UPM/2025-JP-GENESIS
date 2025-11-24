@@ -1,3 +1,5 @@
+# Código provisional, no es ejecutado por el backend
+
 import streamlit as st
 from langchain_community.llms import Ollama
 from langchain_core.messages import HumanMessage, SystemMessage
