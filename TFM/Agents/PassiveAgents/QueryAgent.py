@@ -8,8 +8,9 @@ class QueryAgent:
 
     async def run(self, text_query: str):
         prompt = (
-            "Convert the following natural language request into SQL for a PostgreSQL database. "
-            "Return ONLY the SQL, no explanation.\n\n"
+            "Eres un experto en interpretar y traducir lenguaje natural a SQL. "
+            "Convierte el prompt del usuario realizado con lenguaje natural language a SQL, para una base de datos PostgreSQL. "
+            "Solo devuelve la sentencia SQL, sin explicaciones.\n\n"
             f"Input: {text_query}\nSQL:"
         )
 
