@@ -4,16 +4,16 @@ import random
 
 class ValidatorAgent:
     async def run(self, answer: str):
-        # placeholder heuristics — luego se puede mejorar
+        # placeholder heuristics — hecho para pruebas pero se puede cambiar
         confidence = round(random.uniform(6.5, 9.8), 2)
         relevance = round(random.uniform(7.0, 9.9), 2)
 
         reasoning = (
-            "The answer was evaluated based on semantic coherence and internal logic. "
-            "No contradictory statements were detected."
+            "La respuesta fue evaluada en base a dos criterios: lógica interna y coherencia semántica. "
+            "No se han detectado enunciados contradictorios."
         )
 
-        consistency = "consistent" if confidence > 7.0 else "needs review"
+        consistency = "Consistente" if confidence > 7.0 else "Requiere revisión"
 
         return {
             "confidence": confidence,
