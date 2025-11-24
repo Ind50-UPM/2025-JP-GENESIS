@@ -31,4 +31,4 @@ class InfluxAgent:
             return {"results": output}
 
         except Exception as e:
-            return {"error": f"Influx query failed: {str(e)}"}
+            return {"error": f"Fallo en la query de Influx: {str(e)}"}
