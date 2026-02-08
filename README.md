@@ -34,9 +34,9 @@ Usuario → OpenWebUI → Pipelines → Router
 → Síntesis
 → OpenWebUI
 
-# Nodos del grafo
+## Nodos del grafo
 
-Nodo 1 – Router (detección de intención)
+#Nodo 1 – Router (detección de intención)
 Recibe la consulta del usuario y clasifica la intención:
 
 -Comandos de ayuda o test (help, ping)
@@ -45,14 +45,14 @@ Recibe la consulta del usuario y clasifica la intención:
 
 -Consultas en lenguaje natural libre (NL)
 
-Nodo 2a – Planificación determinista (plan_sql)
+#Nodo 2a – Planificación determinista (plan_sql)
 Para consultas estructuradas (por ejemplo, conteos o rangos temporales), el agente genera SQL mediante plantillas deterministas.
 Esta ruta evita el uso del LLM y reduce el riesgo de alucinaciones, además de que permite a los usuarios familiarizados con la base de datos y con SQL realizar consultas sin acceder directamente a la base de datos.
 
-Nodo 2b – Generación de SQL con LLM (llm_generate_sql)
+#Nodo 2b – Generación de SQL con LLM (llm_generate_sql)
 Para consultas en lenguaje natural libre, el agente utiliza un LLM local (llama3:latest vía Ollama) para generar la consulta SQL correspondiente.
 
-Nodo 3 – Validación de SQL (validate_sql / validate_llm_sql)
+#Nodo 3 – Validación de SQL (validate_sql / validate_llm_sql)
 Toda consulta SQL, independientemente de su origen, se valida antes de ejecutarse:
 
 -Solo se permiten consultas de lectura (SELECT / WITH)
@@ -61,12 +61,12 @@ Toda consulta SQL, independientemente de su origen, se valida antes de ejecutars
 
 -Se fuerza un límite máximo de filas (LIMIT)
 
-Nodo 4 – Ejecución de herramienta (run_db)
+#Nodo 4 – Ejecución de herramienta (run_db)
 El agente ejecuta la consulta validada en PostgreSQL utilizando el usuario lectura.
 
-Nodo 5 – Síntesis de resultados (summarize)
+#Nodo 5 – Síntesis de resultados (summarize)
 Los resultados de la consulta se formatean y se convierten en una respuesta textual adecuada para el usuario.
 
-Salida
+#Salida
 La respuesta final se devuelve a OpenWebUI en formato compatible con OpenAI, con soporte tanto para streaming como para respuestas síncronas.
 
