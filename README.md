@@ -27,3 +27,37 @@ Usuario
     → run_db (PostgreSQL)
     → summarize
     → OpenWebUI
+
+
+
+flowchart TD
+  U[Usuario] --> OW[OpenWebUI]
+  OW --> P[Pipelines<br/>API OpenAI-compatible]
+
+  P --> router[router<br/>detect_intent]
+
+  %% Ramas iniciales
+  router -->|help| help[help node]
+  router -->|ping| ping[ping node]
+
+  router -->|sql / cols / count / time_range| plan_sql[plan_sql<br/>plantillas deterministas]
+  router -->|NL libre| llm_generate_sql[llm_generate_sql<br/>Ollama llama3]
+
+  %% Ruta determinista
+  plan_sql --> validate_sql_det[validate_sql]
+  validate_sql_det -->|OK| run_db[run_db<br/>PostgreSQL]
+  validate_sql_det -->|NO| error[error]
+
+  %% Ruta LLM
+  llm_generate_sql --> validate_sql_llm[validate_llm_sql]
+  validate_sql_llm -->|OK| run_db
+  validate_sql_llm -->|NO| error
+
+  %% Común
+  run_db --> summarize[summarize<br/>formatear respuesta]
+  help --> summarize
+  ping --> summarize
+  error --> summarize
+
+  summarize --> OUT[Respuesta OpenAI-compatible<br/>stream / no-stream]
+  OUT --> OW
