@@ -1,4 +1,4 @@
-# Ejemplo 3 — Conversación referenciando datos específicos de la base de datos en lenguaje natural
+# Caso 3 - Conversación referenciando datos específicos de la base de datos en lenguaje natural
 
 ## Objetivo
 Lograr que el usuario, mediante lenguaje natural, pueda interactuar con OpenWebUI para obtener informaciòn sobre la base de datos y que el modelo pueda usar un razonamiento estructurado en LangGraph para poder procesar esta consulta.
