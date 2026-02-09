@@ -16,7 +16,12 @@ SELECT COUNT(*) AS n FROM public.machine_activity;
 ```
 
 **Respuesta**
-n = 1000
+✅ Resultado
+Intent: count
+SQL:
+SELECT COUNT(*) AS n FROM public.machine_activity;
+
+n = 0
 
 
 ## Ejemplo 2
@@ -42,8 +47,12 @@ WHERE ts >= NOW() - INTERVAL '24 hours';
 ```
 
 **Respuesta**
+✅ Resultado
+Intent: time_range
+SQL:
+SELECT COUNT(*) AS n FROM public.time_record WHERE ts >= NOW() - INTERVAL '24 hours';
 
-n = 1000
+n = 0
 
 ## Ejemplo 3
 
@@ -68,16 +77,23 @@ muéstrame los nombres de las tablas del esquema público
 **SQL generado por el LLM**
 
 ```sql
-SELECT table_name
-FROM information_schema.tables
+SELECT table_name 
+FROM information_schema.tables 
 WHERE table_schema = 'public'
 LIMIT 50;
 ```
 
 **Respuesta**
+✅ Resultado
+Intent: llm_sql
+SQL:
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' LIMIT 50;
 
+```text
 table_name
-...
+----------
 machine_activity
 time_record
-...
+```
