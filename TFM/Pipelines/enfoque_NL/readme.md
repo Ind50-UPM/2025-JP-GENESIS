@@ -13,5 +13,5 @@ Que un usuario pueda conocer la estructura de la base de datos de una manera rá
 ## Flujo de razonamiento
 ```mermaid
 flowchart TD
-U-->P[Pipelines]-->V[validate_sql]-->DB[(PostgreSQL)]-->R[respuesta]
+U[Usuario]-->P[Pipelines]-->V[validate_sql]-->DB[(PostgreSQL)]-->R[respuesta]
 ```
