@@ -13,5 +13,7 @@ Lograr que el usuario pueda ejecutar queries específicas sobre la base de datos
 ## Flujo de razonamiento (resumen)
 ```mermaid
 flowchart TD
-  ...
-
+U[usuario]-->router{intent}
+router--count/time_range-->plan_sql-->DB-->summarize
+router--help/ping-->summarize
+```
