@@ -7,7 +7,7 @@
 - LLM: Ollama (llama3) para transformación de lenguaje natural a SQL (NL→SQL)
 - Tools: PostgreSQL (lectura) con validación de intención (para prevenir alteraciones en la base de datos a consultar)
 
-## Quién controla el flujo
+## Control del flujo
 Actualmente el controlador es el grafo (LangGraph). El LLM se integra como nodo para tareas generativas como la conversión de NL a SQL.
 
 Siguiente paso: Lograr que el LLM seleccione herramientas/agentes explícitamente, manteniendo LangGraph como orquestador. La manera en la que se podrìa lograr esto es mediante el uso de tool calling.
