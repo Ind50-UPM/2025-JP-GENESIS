@@ -13,8 +13,5 @@ Lograr que el usuario, mediante lenguaje natural, pueda interactuar con OpenWebU
 ## Flujo de razonamiento (resumen)
 ```mermaid
 flowchart TD
-U[usuario]-->router{intent}
-router--count/time_range-->plan_sql-->DB-->summarize
-router--help/ping-->summarize
 ```
 
