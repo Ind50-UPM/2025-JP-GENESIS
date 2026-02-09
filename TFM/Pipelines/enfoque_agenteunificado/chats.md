@@ -11,6 +11,7 @@
 **SQL ejecutado**
 ```sql
 SELECT COUNT(*) AS n FROM public.machine_activity;
+```
 
 **Respuesta**
 n = 1000
