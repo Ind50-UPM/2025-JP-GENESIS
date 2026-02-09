@@ -77,7 +77,7 @@ LIMIT 50;
 **Respuesta**
 
 table_name
-----------
+...
 machine_activity
 time_record
 ...
