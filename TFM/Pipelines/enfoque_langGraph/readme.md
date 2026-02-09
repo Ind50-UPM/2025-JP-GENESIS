@@ -1,4 +1,4 @@
-# Ejemplo 2 — Conversación usando consultas estructuradas en SQL
+# Caso 2 — Conversación usando consultas estructuradas en SQL
 
 ## Objetivo
 Lograr que el usuario pueda ejecutar queries específicas sobre la base de datos mediante la interacción con OpenWebUI.
