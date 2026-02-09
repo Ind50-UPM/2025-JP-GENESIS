@@ -14,5 +14,4 @@ Que un usuario pueda conocer la estructura de la base de datos de una manera rá
 ```mermaid
 flowchart TD
 U-->P[Pipelines]-->V[validate_sql]-->DB[(PostgreSQL)]-->R[respuesta]
-...
-
+```
