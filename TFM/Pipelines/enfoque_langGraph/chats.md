@@ -10,11 +10,24 @@
 4. Se devuelven las filas
 
 **Respuesta**
+✅ Resultado
+Intent: sql
+SQL:
+SELECT datname FROM pg_database LIMIT 10;
+
 ```text
 datname
 -------
 postgres
+trombofilia
+1245
 ncorrea
+2207
+autosurveillance
+deepquality
+enel
+enel_guillena
+enel_lleida
 ```
 
 
@@ -34,7 +47,9 @@ sql: DROP TABLE machine_activity;
 
 **Respuesta**
 
-❌ SQL no permitido (solo SELECT/WITH).
+❌ Error DB: SQL no permitido (solo SELECT/WITH).
+SQL:
+DROP TABLE machine_activity LIMIT 50;
 
 
 ## Ejemplo 3 — Consulta SQL sin filas
@@ -53,4 +68,11 @@ sql: SELECT * FROM machine_activity WHERE 1=0;
 
 **Respuesta**
 
+✅ Resultado
+Intent: sql
+SQL:
+SELECT * FROM machine_activity WHERE 1=0 LIMIT 50;
+
+```text
 Sin filas.
+```
