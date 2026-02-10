@@ -4,11 +4,11 @@
 > cuántas filas hay en machine_activity
 
 **Razonamiento**
-1. El router detecta intención `count`.
-2. Se selecciona la ruta determinista (`plan_sql`).
-3. Se genera SQL fijo sin requerir del uso del LLM.
-4. Se ejecuta la tool PostgreSQL.
-5. Se sintetiza la respuesta.
+1. El router detecta intención `count`
+2. Se selecciona la ruta determinista (`plan_sql`)
+3. Se genera SQL fijo sin requerir del uso del LLM
+4. Se ejecuta la tool PostgreSQL
+5. Se sintetiza la respuesta
 
 **SQL ejecutado**
 ```sql
@@ -32,11 +32,11 @@ n = 0
 
 **Razonamiento**
 
-1) El router detecta intención del usuario de usar time_range.
-2) Se selecciona la tabla time_record.
-3) Se construye SQL con filtro temporal.
-4) Se ejecuta PostgreSQL.
-5) Se devuelve el conteo.
+1) El router detecta intención del usuario de usar time_range
+2) Se selecciona la tabla time_record
+3) Se construye SQL con filtro temporal
+4) Se ejecuta PostgreSQL
+5) Se devuelve el conteo
 
 **SQL ejecutado**
 
@@ -62,17 +62,12 @@ muéstrame los nombres de las tablas del esquema público
 
 **Razonamiento**
 
-1) El router no detecta patrón determinista.
-
-2) Se invoca el nodo LLM (llm_generate_sql).
-
-3) El LLM genera una consulta SQL.
-
-4) Se valida que sea solo lectura.
-
-5) Se ejecuta PostgreSQL.
-
-6) Se formatea la respuesta.
+1) El router no detecta patrón determinista
+2) Se invoca el nodo LLM (llm_generate_sql)
+3) El LLM genera una consulta SQL
+4) Se valida que sea solo lectura
+5) Se ejecuta PostgreSQL
+6) Se formatea la respuesta
 
 **SQL generado por el LLM**
 
