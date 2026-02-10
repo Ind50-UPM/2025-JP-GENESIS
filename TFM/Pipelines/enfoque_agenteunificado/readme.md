@@ -19,12 +19,12 @@ g = StateGraph(AgentState)
 ```
 
 Función: 
-- Define el grafo de estados del agente.
-- Es la estructura central donde se declaran nodos, transiciones y estado compartido.
+- Define el grafo de estados del agente
+- Es la estructura central donde se declaran nodos, transiciones y estado compartido
 
 Qué representa conceptualmente:
 
-- El “cerebro” del agente, se busca trabajar un modelo explícito de razonamiento.
+- El “cerebro” del agente, se busca trabajar un modelo explícito de razonamiento
 
 **AgentState**
 
@@ -40,10 +40,10 @@ class AgentState(TypedDict, total=False):
 
 Función:
 
-- Define la memoria compartida entre nodos.
-- Cada nodo lee y escribe partes del estado.
-- Hace explícito el estado cognitivo del agente.
-- Facilita trazabilidad y depuración.
+- Define la memoria compartida entre nodos
+- Cada nodo lee y escribe partes del estado
+- Hace explícito el estado cognitivo del agente
+- Facilita trazabilidad y depuración
 
 **Nodos (add_node)**
 
@@ -58,8 +58,8 @@ g.add_node("validate_llm_sql", node_validate_llm_sql)
 
 Función:
 
-- Cada nodo es una unidad funcional del razonamiento.
-- Encapsulan decisiones o acciones concretas.
+- Cada nodo es una unidad funcional del razonamiento
+- Encapsulan decisiones o acciones concretas
 
 Ejemplos:
 
@@ -76,8 +76,8 @@ g.set_entry_point("router")
 
 Función:
 
-- Define dónde comienza el razonamiento del agente.
-- Siempre se inicia analizando la intención del usuario.
+- Define dónde comienza el razonamiento del agente
+- Siempre se inicia analizando la intención del usuario
 
 **Transiciones condicionales (add_conditional_edges)**
 
@@ -87,9 +87,9 @@ g.add_conditional_edges("router", route_from_router, {...})
 
 Función:
 
-- Implementa razonamiento como decisión de ruta.
-- El flujo cambia según el estado (intent).
-- Dada una intención, el agente decide qué camino seguir.
+- Implementa razonamiento como decisión de ruta
+- El flujo cambia según el estado (intent)
+- Dada una intención, el agente decide qué camino seguir
 
 **Transiciones normales (add_edge)**
 
@@ -100,7 +100,7 @@ g.add_edge("run_db", "summarize")
 
 Función:
 
-- Define el flujo secuencial tras una decisión.
+- Define el flujo secuencial tras una decisión
 
 **Nodo LLM (llm_generate_sql)**
 
@@ -140,8 +140,8 @@ g.add_edge("summarize", END)
 
 Función
 
-- Marca el final del razonamiento.
-- El agente devuelve una respuesta y termina el flujo de razonamiento.
+- Marca el final del razonamiento
+- El agente devuelve una respuesta y termina el flujo de razonamiento
 
 
 **Compilación del grafo (compile)**
@@ -152,7 +152,7 @@ GRAPH = g.compile()
 
 Función
 
-- Convierte el grafo declarativo en un ejecutable.
+- Convierte el grafo declarativo en un ejecutable
 - Permite invocar el agente con GRAPH.invoke()
 
 
