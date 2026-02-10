@@ -188,7 +188,7 @@ U[Usuario] --> OW[OpenWebUI]
   ping --> summarize
   error --> summarize
 
-  summarize --> OUT[Respuesta OpenAI-compatible<br/>stream / no-stream]
+  summarize --> OUT[Respuesta en estándar API de OpenAI <br/>stream / no-stream]
   OUT --> OW
 ```
 
