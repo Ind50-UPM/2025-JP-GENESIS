@@ -26,7 +26,7 @@ Qué representa conceptualmente:
 
 - Se busca un agente que trabaje con un modelo explícito de razonamiento.
 
-**Estado tipado (AgentState)**
+**AgentState**
 
 ```text
 class AgentState(TypedDict, total=False):
@@ -110,7 +110,7 @@ g.add_edge("summarize", END)
 Función
 
 - Marca el final del razonamiento.
-- El agente devuelve una respuesta y termina.
+- El agente devuelve una respuesta y termina el flujo.
 
 **Compilación del grafo (compile)**
 
