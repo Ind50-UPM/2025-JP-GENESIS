@@ -28,6 +28,7 @@ Qué representa conceptualmente:
 
 **Estado tipado (AgentState)**
 
+```text
 class AgentState(TypedDict, total=False):
     user_text: str
     intent: ...
@@ -35,6 +36,7 @@ class AgentState(TypedDict, total=False):
     sql: str
     db_result: dict
     answer: str
+```
 
 Función:
 
@@ -45,12 +47,14 @@ Función:
 
 **Nodos (add_node)**
 
+```text
 g.add_node("router", node_router)
 g.add_node("plan_sql", node_plan_sql)
 g.add_node("run_db", node_run_db)
 g.add_node("summarize", node_summarize)
 g.add_node("llm_generate_sql", node_llm_generate_sql)
 g.add_node("validate_llm_sql", node_validate_llm_sql)
+```
 
 Función:
 
@@ -66,7 +70,9 @@ Ejemplos:
 
 **Punto de entrada (set_entry_point)**
 
+```text
 g.set_entry_point("router")
+```
 
 Función:
 
@@ -75,8 +81,9 @@ Función:
 
 **Transiciones condicionales (add_conditional_edges)**
 
+```text
 g.add_conditional_edges("router", route_from_router, {...})
-
+```
 
 Función:
 
@@ -86,8 +93,10 @@ Función:
 
 **Transiciones normales (add_edge)**
 
+```text
 g.add_edge("plan_sql", "run_db")
 g.add_edge("run_db", "summarize")
+```
 
 Función:
 
@@ -95,7 +104,9 @@ Función:
 
 **Nodo LLM (llm_generate_sql)**
 
+```text
 g.add_node("llm_generate_sql", node_llm_generate_sql)
+```
 
 Función:
 
@@ -108,8 +119,9 @@ Función:
 
 **Nodo de validación (validate_llm_sql)**
 
+```text
 g.add_node("validate_llm_sql", node_validate_llm_sql)
-
+```
 
 Función:
 
@@ -121,9 +133,10 @@ Función:
 
 **Estado final (END)**
 
+```text
 from langgraph.graph import END
 g.add_edge("summarize", END)
-
+```
 
 Función
 
@@ -132,7 +145,10 @@ Función
 
 
 **Compilación del grafo (compile)**
+
+```text
 GRAPH = g.compile()
+```
 
 Función
 
