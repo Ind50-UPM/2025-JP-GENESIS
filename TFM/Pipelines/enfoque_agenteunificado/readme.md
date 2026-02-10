@@ -161,7 +161,7 @@ Función
 ```mermaid
 flowchart TD
 U[Usuario] --> OW[OpenWebUI]
-  OW --> P[Pipelines<br/>Script compatible con estándar OpenAI]
+  OW --> P[Pipelines<br/>Script compatible con estándar API de OpenAI]
 
   P --> router[router<br/>detect_intent]
 
