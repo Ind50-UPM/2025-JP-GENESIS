@@ -1,4 +1,4 @@
-# Caso 3 - Agente que permite conversaciones tanto en lenguaje natural como usando consultas estructuradas sobre la base de datos, basándose en usar componentes de LangGraph
+# Caso 3 - Agente que permite conversaciones tanto en lenguaje natural como usando consultas estructuradas sobre la base de datos, desarrollado con componentes de LangGraph
 
 ## Objetivo
 Lograr que el usuario, mediante lenguaje natural, pueda interactuar con OpenWebUI para obtener informaciòn sobre la base de datos y que el modelo pueda usar un razonamiento estructurado en LangGraph para poder procesar esta consulta.
