@@ -14,7 +14,9 @@ Lograr que el usuario, mediante lenguaje natural, pueda interactuar con OpenWebU
 
 **StateGraph**
 
+```text
 g = StateGraph(AgentState)
+```
 
 Función: 
 - Define el grafo de estados del agente.
