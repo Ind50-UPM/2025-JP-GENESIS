@@ -39,11 +39,9 @@ sql: DROP TABLE machine_activity;
 
 **Razonamiento**
 
-1) Se detecta palabra clave prohibida (DROP).
-
-2) La ejecución se bloquea.
-
-3) No se accede a la base de datos.
+1) Se detecta palabra clave prohibida (DROP)
+2) La ejecución se bloquea
+3) No se accede a la base de datos
 
 **Respuesta**
 
@@ -60,11 +58,9 @@ sql: SELECT * FROM machine_activity WHERE 1=0;
 
 **Razonamiento**
 
-1) SQL válido y de solo lectura.
-
-2) PostgreSQL devuelve 0 filas.
-
-3) El agente responde correctamente.
+1) SQL válido y de solo lectura
+2) PostgreSQL devuelve 0 filas
+3) El agente responde correctamente
 
 **Respuesta**
 
