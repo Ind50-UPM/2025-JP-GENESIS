@@ -174,12 +174,12 @@ U[Usuario] --> OW[OpenWebUI]
 
   %% Ruta determinista
   plan_sql --> validate_sql_det[validate_sql]
-  validate_sql_det -->|OK| run_db[run_db<br/>PostgreSQL]
+  validate_sql_det -->|SÍ| run_db[run_db<br/>PostgreSQL]
   validate_sql_det -->|NO| error[error]
 
   %% Ruta LLM
   llm_generate_sql --> validate_sql_llm[validate_llm_sql]
-  validate_sql_llm -->|OK| run_db
+  validate_sql_llm -->|SÍ| run_db
   validate_sql_llm -->|NO| error
 
   %% Común
