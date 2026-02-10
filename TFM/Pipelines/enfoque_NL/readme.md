@@ -1,4 +1,4 @@
-# Caso 1 — Consulta libre con lenguaje natural sobre la estructura de la base de datos
+# Caso 1 — Agente que permite la consulta libre con lenguaje natural sobre la estructura de la base de datos
 
 ## Objetivo
 Que un usuario pueda conocer la estructura de la base de datos de una manera rápida y ordenada usando lenguaje natural.
