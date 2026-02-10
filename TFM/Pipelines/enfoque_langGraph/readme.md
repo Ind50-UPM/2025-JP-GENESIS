@@ -1,4 +1,4 @@
-# Caso 2 — Agente que permite conversaciones usando consultas estructuradas en SQL, en base al uso de componentes en LangGraph
+# Caso 2 — Agente que permite conversaciones usando consultas estructuradas en SQL, desarrollado con componentes en LangGraph
 
 ## Objetivo
 Lograr que el usuario pueda ejecutar queries específicas sobre la base de datos mediante la interacción con OpenWebUI.
