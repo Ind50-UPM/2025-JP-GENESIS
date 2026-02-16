@@ -10,148 +10,219 @@ Lograr que el usuario, mediante lenguaje natural, pueda interactuar con este mod
 - PostgreSQL: sí
 - LangGraph/LangChain: sí
 
-### Componentes LangGraph utilizados
+## Componentes LangGraph utilizados
 
-**StateGraph**
+---
 
-```text
+### **StateGraph**
+
+```python
 g = StateGraph(AgentState)
 ```
 
-Función: 
-- Define el grafo de estados del agente
-- Es la estructura central donde se declaran nodos, transiciones y estado compartido
+#### Función
 
-Qué representa conceptualmente:
+* Define el grafo de estados del agente
+* Es la estructura central donde se declaran nodos, transiciones y estado compartido
+* Permite modelar el flujo de razonamiento como un proceso explícito y controlado
+* Es el motor de orquestación del sistema, formaliza el razonamiento del modelo
+* Permite separar decisiones, ejecución de herramientas y generación de respuesta
 
-- El “cerebro” del agente, se busca trabajar un modelo explícito de razonamiento
+---
 
-**AgentState**
+### **AgentState**
 
-```text
+```python
 class AgentState(TypedDict, total=False):
     user_text: str
-    intent: ...
-    table: str
-    sql: str
+    plan: dict
+    route: str
     db_result: dict
     answer: str
 ```
 
-Función:
+#### Función
 
-- Define la memoria compartida entre nodos
-- Cada nodo lee y escribe partes del estado
-- Hace explícito el estado cognitivo del agente
-- Facilita trazabilidad y depuración
+* Define la memoria compartida entre nodos
+* Cada nodo puede leer y modificar partes del estado
+* Hace explícito el estado cognitivo del sistema en cada paso
+* Es la memoria de trabajo del agente, permite trazabilidad del razonamiento
+* Facilita depuración y análisis del flujo
 
-**Nodos (add_node)**
+---
 
-```text
-g.add_node("router", node_router)
-g.add_node("plan_sql", node_plan_sql)
-g.add_node("run_db", node_run_db)
-g.add_node("summarize", node_summarize)
-g.add_node("llm_generate_sql", node_llm_generate_sql)
-g.add_node("validate_llm_sql", node_validate_llm_sql)
+### **Nodos (add_node)**
+
+```python
+g.add_node("input", node_input)
+g.add_node("supervisor", node_supervisor)
+g.add_node("postgres_agent", node_postgres_agent)
+g.add_node("done", node_done)
 ```
 
-Función:
+#### Función
 
-- Cada nodo es una unidad funcional del razonamiento
-- Encapsulan decisiones o acciones concretas
+* Cada nodo encapsula una unidad funcional del sistema
+* Separan claramente:
 
-Ejemplos:
+  * Interpretación
+  * Planificación
+  * Ejecución
+  * Respuesta
 
-- router: interpreta intención
-- plan_sql: genera SQL
-- run_db: ejecuta tool
-- summarize: genera respuesta final
+---
 
-**Punto de entrada (set_entry_point)**
+### **Supervisor LLM**
 
-```text
-g.set_entry_point("router")
+El supervisor utiliza un modelo (Ollama + Llama3) con un prompt estructurado que obliga a devolver un JSON con el siguiente esquema:
+
+```json
+{
+  "route": "...",
+  "action": "query | answer",
+  "sql": "...",
+  "answer": "..."
+}
 ```
 
-Función:
+#### Función
 
-- Define dónde comienza el razonamiento del agente
-- Siempre se inicia analizando la intención del usuario
+* Actúa como cerebro estratégico o supervisor, está encargado de la planificación del razonamiento
+* Decide qué agente especializado debe actuar
+* No ejecuta directamente herramientas
+* No accede directamente a bases de datos
+* Separa planificación de ejecución
+* Implementa una arquitectura de tipo supervisor-worker
 
-**Transiciones condicionales (add_conditional_edges)**
+---
 
-```text
-g.add_conditional_edges("router", route_from_router, {...})
+### **Agentes especializados por base de datos**
+
+Cada base de datos PostgreSQL tiene una instancia:
+
+```python
+PostgresSafeAgent(route="pg_ncorrea", dbname="ncorrea")
+PostgresSafeAgent(route="pg_enel", dbname="enel")
+...
 ```
 
-Función:
+#### Función
 
-- Implementa razonamiento como decisión de ruta
-- El flujo cambia según el estado (intent)
-- Dada una intención, el agente decide qué camino seguir
+* Ejecutar consultas únicamente en su base de datos asignada
+* Validar que el SQL sea de solo lectura
+* Forzar límites de seguridad
+* Conectar en modo `readonly`
+* Registrar métricas
 
-**Transiciones normales (add_edge)**
+#### Qué representan en el sistema
 
-```text
-g.add_edge("plan_sql", "run_db")
-g.add_edge("run_db", "summarize")
+* Agentes especializados por familia de datos
+* Permiten tener modularidad y escalabilidad
+* Permiten la separación de responsabilidades
+
+---
+
+### **Transiciones condicionales**
+
+```python
+g.add_conditional_edges("supervisor", route_function, {...})
 ```
 
-Función:
+#### Función
 
-- Define el flujo secuencial tras una decisión
+* Implementan el razonamiento como decisión de ruta
+* El flujo cambia dinámicamente según el `route` decidido por el supervisor
+* Permiten arquitectura multi-agente
+* El sistema no es lineal, es un grafo dinámico controlado por decisión cognitiva
 
-**Nodo LLM (llm_generate_sql)**
+---
 
-```text
-g.add_node("llm_generate_sql", node_llm_generate_sql)
+### **Transiciones secuenciales**
+
+```python
+g.add_edge("postgres_agent", "done")
 ```
 
-Función:
+#### Función
 
-- Introduce al LLM como herramienta cognitiva
-- Convierte lenguaje natural libre en SQL
-- El LLM no decide el flujo actualmente
-- El LLM no ejecuta tools actualmente
-- El LLM no controla el agente actualmente
-- El LLM solo genera contenido cuando el grafo lo decide
+* Definen el flujo tras una decisión
+* Permiten encadenar ejecución con respuesta
 
-**Nodo de validación (validate_llm_sql)**
+---
 
-```text
-g.add_node("validate_llm_sql", node_validate_llm_sql)
-```
+### **Estado final (END)**
 
-Función:
-
-- Actúa como “filtro cognitivo” para corroborar la efectividad del output del LLM
-- Verifica que el output del LLM cumple reglas de seguridad
-- Evita alucinaciones
-- Separa generación de outputs de la ejecución del comando SQL en la base de datos
-
-
-**Estado final (END)**
-
-```text
+```python
 from langgraph.graph import END
-g.add_edge("summarize", END)
+g.add_edge("done", END)
 ```
 
-Función
+#### Función
 
-- Marca el final del razonamiento
-- El agente devuelve una respuesta y termina el flujo de razonamiento
+* Marca el final del razonamiento
+* El sistema devuelve una respuesta estructurada compatible con OpenAI API
 
+---
 
-**Compilación del grafo (compile)**
+### **Compilación del grafo**
 
-```text
+```python
 GRAPH = g.compile()
 ```
 
-Función
+#### Función
 
-- Convierte el grafo declarativo en un ejecutable
-- Permite invocar el agente con GRAPH.invoke()
+* Convierte la definición declarativa en un ejecutable
+* Permite invocar el agente con:
+
+```python
+GRAPH.invoke({...})
+```
+
+---
+
+## Seguridad en la ejecución SQL
+
+El sistema implementa múltiples capas de protección:
+
+* Validación por regex (bloqueo de INSERT/UPDATE/DELETE/etc.)
+* Validación del primer token SQL
+* Forzado de `LIMIT`
+* Conexión en modo `readonly`
+* Usuario PostgreSQL con permisos restringidos
+* Timeout de conexión
+* Límite máximo de filas
+* Recorte de salida excesiva
+
+Esto evita que el LLM pueda ejecutar operaciones destructivas.
+
+---
+
+## Flujo general del sistema
+
+```text
+Usuario
+   ↓
+OpenWebUI
+   ↓
+Pipeline
+   ↓
+LangGraph
+   ↓
+Supervisor (LLM)
+   ↓
+Agente PostgreSQL especializado
+   ↓
+Base de Datos
+   ↓
+Respuesta formateada
+   ↓
+Usuario
+```
+
+---
+
+## Flujo representado en Mermaid
+
+
 
