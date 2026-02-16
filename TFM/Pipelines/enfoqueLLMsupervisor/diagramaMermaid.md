@@ -48,9 +48,9 @@ flowchart TD
     DBSuccess --> NodeDone
     NodeDone --> CheckRoute{Tipo de<br/>respuesta?}
     CheckRoute -->|direct| FormatDirect[Formatear respuesta<br/>conversacional]
-    CheckRoute -->|query exitosa| FormatSuccess[Formatear resultado SQL<br/>✅ con tabla y stats]
-    CheckRoute -->|query error| FormatError[Formatear mensaje error<br/>❌ con detalles]
-    CheckRoute -->|query sin filas| FormatEmpty[Formatear mensaje<br/>ℹ️ sin resultados]
+    CheckRoute -->|query exitosa| FormatSuccess[Formatear resultado SQL<br/> con tabla y stats]
+    CheckRoute -->|query error| FormatError[Formatear mensaje error<br/> con detalles]
+    CheckRoute -->|query sin filas| FormatEmpty[Formatear mensaje<br/> sin resultados]
     FormatDirect --> PrepareOutput[Preparar output final]
     FormatSuccess --> PrepareOutput
     FormatError --> PrepareOutput
