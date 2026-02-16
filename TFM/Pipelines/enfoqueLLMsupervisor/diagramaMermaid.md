@@ -1,3 +1,4 @@
+```mermaid
 flowchart TD
     Start([Usuario envía mensaje]) --> Pipeline[Pipeline.pipe]
     Pipeline --> CheckLangGraph{LangGraph<br/>disponible?}
@@ -76,3 +77,4 @@ flowchart TD
     style NodeSupervisor fill:#f0e1ff
     style NodePostgres fill:#e1f0ff
     style NodeDone fill:#ffe1f5
+```
