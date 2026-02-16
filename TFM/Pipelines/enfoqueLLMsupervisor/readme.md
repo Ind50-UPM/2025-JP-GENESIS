@@ -1,4 +1,4 @@
-# Caso 4 - LLM que es implementado en forma de supervisor, el cual dispone de agentes para cada base de datos existente y que permite conversaciones con lenguaje natural con el usuario
+# Caso 4 - LLM implementado en forma de supervisor, el cual dispone de agentes para cada base de datos existente y que permite conversaciones con lenguaje natural con el usuario
 
 ## Objetivo
 Lograr que el usuario, mediante lenguaje natural, pueda interactuar con este modelo para obtener informaciòn sobre las bases de datos existentes y que el modelo pueda usar un razonamiento estructurado en LangGraph para poder procesar esta consulta, a través del uso de agentes especializados en cada base de datos presente.
