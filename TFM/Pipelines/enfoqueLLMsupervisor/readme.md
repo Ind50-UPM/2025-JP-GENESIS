@@ -1,14 +1,21 @@
-# Caso 4 - LLM implementado en forma de supervisor, el cual dispone de agentes para cada base de datos existente y que permite conversaciones con lenguaje natural con el usuario
+
+---
+
+# Caso 4 - LLM implementado en forma de supervisor, con agentes especializados por base de datos y razonamiento estructurado mediante LangGraph + CoT
 
 ## Objetivo
-Lograr que el usuario, mediante lenguaje natural, pueda interactuar con este modelo para obtener informaciòn sobre las bases de datos existentes y que el modelo pueda usar un razonamiento estructurado en LangGraph para poder procesar esta consulta, a través del uso de agentes especializados en cada base de datos presente.
+
+Lograr que el usuario, mediante lenguaje natural, pueda interactuar con múltiples bases de datos PostgreSQL desde una única interfaz, permitiendo que el sistema seleccione automáticamente qué agente especializado debe actuar según la intención detectada. El modelo utiliza una arquitectura supervisor-worker, donde el LLM planifica, LangGraph orquesta el flujo y cada agente de base de datos ejecuta únicamente consultas sobre su BD asignada. Además, se añade una capa de razonamiento estructurado basada en CoT para mejorar el comportamiento ante consultas ambiguas, reintentos, validación y aclaraciones. 
 
 ## Componentes
-- OpenWebUI (frontend)
-- OpenWebUI Pipelines
-- Ollama: llama3:latest
-- PostgreSQL: sí
-- LangGraph/LangChain: sí
+
+* OpenWebUI (frontend)
+* OpenWebUI Pipelines
+* Ollama: `llama3:latest`
+* PostgreSQL: sí
+* LangGraph/LangChain: sí
+* Psycopg2: sí
+* Logging estructurado y registro en archivo: sí 
 
 ## Componentes LangGraph utilizados
 
@@ -25,8 +32,8 @@ g = StateGraph(AgentState)
 * Define el grafo de estados del agente
 * Es la estructura central donde se declaran nodos, transiciones y estado compartido
 * Permite modelar el flujo de razonamiento como un proceso explícito y controlado
-* Es el motor de orquestación del sistema, formaliza el razonamiento del modelo
-* Permite separar decisiones, ejecución de herramientas y generación de respuesta
+* Actúa como motor de orquestación del sistema
+* Formaliza la separación entre interpretación, planificación, ejecución, validación y respuesta final 
 
 ---
 
@@ -35,10 +42,18 @@ g = StateGraph(AgentState)
 ```python
 class AgentState(TypedDict, total=False):
     user_text: str
-    plan: dict
+    conversation_id: str
+    messages_history: list
     route: str
-    db_result: dict
+    plan: Dict[str, Any]
+    db: Dict[str, Any]
     answer: str
+    retry_count: int
+    use_multi_strategy: bool
+    strategies: List[Dict[str, Any]]
+    strategy_index: int
+    needs_clarification: bool
+    clarification_question: str
 ```
 
 #### Función
@@ -46,8 +61,14 @@ class AgentState(TypedDict, total=False):
 * Define la memoria compartida entre nodos
 * Cada nodo puede leer y modificar partes del estado
 * Hace explícito el estado cognitivo del sistema en cada paso
-* Es la memoria de trabajo del agente, permite trazabilidad del razonamiento
-* Facilita depuración y análisis del flujo
+* Facilita trazabilidad, depuración y análisis del flujo del agente 
+* Contiene no solo el plan y el resultado SQL, sino también:
+
+  * contexto conversacional
+  * historial de mensajes
+  * contador de reintentos
+  * estrategias CoT
+  * estado de aclaración
 
 ---
 
@@ -56,7 +77,11 @@ class AgentState(TypedDict, total=False):
 ```python
 g.add_node("input", node_input)
 g.add_node("supervisor", node_supervisor)
-g.add_node("postgres_agent", node_postgres_agent)
+g.add_node("generate_strategies", node_generate_strategies)
+g.add_node("postgres", node_postgres_agent)
+g.add_node("next_strategy", node_next_strategy)
+g.add_node("generate_alternative", node_generate_alternative)
+g.add_node("clarify", node_clarify)
 g.add_node("done", node_done)
 ```
 
@@ -65,16 +90,31 @@ g.add_node("done", node_done)
 * Cada nodo encapsula una unidad funcional del sistema
 * Separan claramente:
 
-  * Interpretación
-  * Planificación
-  * Ejecución
-  * Respuesta
+  * recepción del estado
+  * planificación supervisada
+  * generación de estrategias CoT
+  * ejecución sobre PostgreSQL
+  * cambio de estrategia
+  * generación de alternativa
+  * aclaración al usuario
+  * construcción de la respuesta final
+
+#### Descripciones de los nodos
+
+* `input`: entrada del estado inicial
+* `supervisor`: interpreta la consulta y decide el plan
+* `generate_strategies`: genera varias estrategias cuando la consulta es ambigua
+* `postgres`: ejecuta el SQL en el agente PostgreSQL correspondiente
+* `next_strategy`: cambia a la siguiente estrategia CoT
+* `generate_alternative`: replanifica cuando falla una consulta
+* `clarify`: formula una repregunta automática
+* `done`: construye la salida final compatible con OpenWebUI 
 
 ---
 
 ### **Supervisor LLM**
 
-El supervisor utiliza un modelo (Ollama + Llama3) con un prompt estructurado que obliga a devolver un JSON con el siguiente esquema:
+El supervisor utiliza un modelo local (`Ollama + llama3`) con un prompt estructurado que obliga a devolver un JSON con el siguiente esquema:
 
 ```json
 {
@@ -87,66 +127,138 @@ El supervisor utiliza un modelo (Ollama + Llama3) con un prompt estructurado que
 
 #### Función
 
-* Actúa como cerebro estratégico o supervisor, está encargado de la planificación del razonamiento
+* Actúa como cerebro estratégico
 * Decide qué agente especializado debe actuar
+* Elige la ruta (`route`) correspondiente a una base de datos concreta
+* Decide si la respuesta debe ser directa o si debe generarse una consulta SQL
 * No ejecuta directamente herramientas
 * No accede directamente a bases de datos
-* Separa planificación de ejecución
-* Implementa una arquitectura de tipo supervisor-worker
+* Implementa una arquitectura supervisor-worker
+* Se apoya primero en heurísticas y, cuando estas no son suficientes, utiliza el LLM para generar el plan estructurado 
+
+---
+
+### **Capa heurística previa al supervisor**
+
+Antes de delegar en el LLM, el sistema intenta reconocer patrones frecuentes del usuario.
+
+#### Ejemplos de patrones detectados
+
+* “N registros de X”
+* “registros de X”
+* “datos de X”
+* “columnas de X”
+* “muéstrame las tablas”
+* “usa [base de datos]”
+
+#### Función
+
+* Reducir dependencia del LLM en consultas simples
+* Hacer más robusto el sistema ante preguntas frecuentes
+* Mejorar precisión en consultas directas a tablas
+* Preservar una planificación determinista cuando el patrón es claro 
+
+---
+
+### **CoT (Chain of Thought) como añadido al supervisor**
+
+El CoT no sustituye la arquitectura supervisor-agentes, sino que la complementa.
+
+#### Componentes CoT principales
+
+```python
+generate_cot_strategies(...)
+validate_result(...)
+generate_alternative(...)
+```
+
+#### Función
+
+* Generar múltiples estrategias SQL alternativas
+* Evaluar cuál tiene más sentido para la pregunta del usuario
+* Reintentar cuando una estrategia falla
+* Validar si el resultado obtenido realmente responde a la intención del usuario
+* Introducir una capa de razonamiento estructurado adicional sin romper la arquitectura base
 
 ---
 
 ### **Agentes especializados por base de datos**
 
-Cada base de datos PostgreSQL tiene una instancia:
+Cada base de datos PostgreSQL tiene una instancia especializada dentro del diccionario `AGENTS`:
 
 ```python
-PostgresSafeAgent(route="pg_ncorrea", dbname="ncorrea")
-PostgresSafeAgent(route="pg_enel", dbname="enel")
-...
+AGENTS[db_to_route(db)] = PostgresSafeAgent(route=db_to_route(db), dbname=db)
 ```
 
 #### Función
 
 * Ejecutar consultas únicamente en su base de datos asignada
+* Aislar responsabilidades por base de datos
+* Impedir que una consulta diseñada para una BD se ejecute sobre otra incorrecta
 * Validar que el SQL sea de solo lectura
 * Forzar límites de seguridad
 * Conectar en modo `readonly`
-* Registrar métricas
+* Registrar métricas de ejecución
+* Separación clara entre planificación y ejecución
+* Posibilidad de ampliar el sistema añadiendo nuevas bases de datos sin rediseñar la arquitectura central 
 
-#### Qué representan en el sistema
+---
 
-* Agentes especializados por familia de datos
-* Permiten tener modularidad y escalabilidad
-* Permiten la separación de responsabilidades
+### **PostgresSafeAgent**
+
+```python
+class PostgresSafeAgent:
+    def __init__(self, route: str, dbname: str):
+        ...
+```
+
+#### Función
+
+* Ejecuta la consulta SQL normalizada
+* Comprueba que la sentencia sea de solo lectura
+* Añade `LIMIT` automáticamente cuando corresponde
+* Abre conexión segura a PostgreSQL
+* Devuelve filas estructuradas para su posterior formateo
+* Captura errores y los devuelve como parte del estado del grafo 
 
 ---
 
 ### **Transiciones condicionales**
 
 ```python
-g.add_conditional_edges("supervisor", route_function, {...})
+g.add_conditional_edges("supervisor", decide_after_supervisor, {...})
+g.add_conditional_edges("postgres", should_after_postgres, {...})
 ```
 
 #### Función
 
-* Implementan el razonamiento como decisión de ruta
-* El flujo cambia dinámicamente según el `route` decidido por el supervisor
-* Permiten arquitectura multi-agente
-* El sistema no es lineal, es un grafo dinámico controlado por decisión cognitiva
+* Implementan el razonamiento como decisiones de ruta
+* El flujo cambia dinámicamente según:
+
+  * si el supervisor devuelve respuesta directa
+  * si conviene ejecutar SQL o usar las heurísticas
+  * si hay que activar estrategias CoT
+  * si hace falta cambiar de estrategia
+  * si hay que generar una alternativa o es necesario pedir una aclaración
+
+* Convierten el sistema en un grafo dinámico y no lineal 
 
 ---
 
 ### **Transiciones secuenciales**
 
 ```python
-g.add_edge("postgres_agent", "done")
+g.add_edge("input", "supervisor")
+g.add_edge("generate_strategies", "postgres")
+g.add_edge("next_strategy", "postgres")
+g.add_edge("generate_alternative", "postgres")
 ```
 
 #### Función
 
-* Definen el flujo tras una decisión
-* Permiten encadenar ejecución con respuesta
+* Definen el flujo directo entre fases
+* Permiten encadenar planificación, ejecución, reintento y respuesta
+* Mantienen el flujo ordenado dentro de una lógica multiagente controlada 
 
 ---
 
@@ -154,30 +266,37 @@ g.add_edge("postgres_agent", "done")
 
 ```python
 from langgraph.graph import END
+g.add_edge("clarify", END)
 g.add_edge("done", END)
 ```
 
 #### Función
 
 * Marca el final del razonamiento
-* El sistema devuelve una respuesta estructurada compatible con OpenAI API
+* El sistema termina bien con:
+
+  * una respuesta final
+  * o una repregunta automática de aclaración
+* Devuelve una respuesta estructurada compatible con el API de OpenAI
 
 ---
 
 ### **Compilación del grafo**
 
 ```python
-GRAPH = g.compile()
+GRAPH = build_graph()
 ```
 
 #### Función
 
-* Convierte la definición declarativa en un ejecutable
-* Permite invocar el agente con:
+* Convierte la definición declarativa del flujo en un ejecutable
+* Permite invocar el sistema con:
 
 ```python
 GRAPH.invoke({...})
 ```
+
+* Hace operativo el razonamiento definido en nodos y transiciones 
 
 ---
 
@@ -185,16 +304,34 @@ GRAPH.invoke({...})
 
 El sistema implementa múltiples capas de protección:
 
-* Validación por regex (bloqueo de INSERT/UPDATE/DELETE/etc.)
+* Validación por regex para bloquear `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, etc.
 * Validación del primer token SQL
+* Restricción a consultas `SELECT` o `WITH`
 * Forzado de `LIMIT`
-* Conexión en modo `readonly`
-* Usuario PostgreSQL con permisos restringidos
+* Normalización del límite máximo permitido
+* Conexión PostgreSQL en modo `readonly`
 * Timeout de conexión
-* Límite máximo de filas
+* Límite máximo de filas devueltas
 * Recorte de salida excesiva
+* Validación previa del plan antes de ejecutarlo
 
-Esto evita que el LLM pueda ejecutar operaciones destructivas.
+Esto evita que el LLM pueda ejecutar operaciones destructivas o salirse del marco de solo lectura. 
+
+---
+
+## Manejo del contexto conversacional
+
+El sistema conserva contexto sobre la base de datos activa:
+
+* usa `CONVERSATION_CONTEXT`
+* detecta comandos como “usa X”, “cambia a X”, “ve a X”
+* además reconstruye la BD activa desde el historial de mensajes mediante `extract_db_from_history()`
+
+#### Función
+
+* Mantener conversaciones coherentes de múltiples turnos (pregunta y repregunta)
+* Permitir que el usuario cambie de base de datos sin repetir el contexto en cada mensaje
+* Hacer el sistema más robusto ante múltiples workers o reinicios parciales del pipeline 
 
 ---
 
@@ -209,11 +346,15 @@ Pipeline
    ↓
 LangGraph
    ↓
-Supervisor (LLM)
+Supervisor (LLM + heurísticas)
+   ↓
+Selección de route
    ↓
 Agente PostgreSQL especializado
    ↓
 Base de Datos
+   ↓
+Validación / reintento / aclaración
    ↓
 Respuesta formateada
    ↓
@@ -223,85 +364,71 @@ Usuario
 ---
 
 ## Flujo representado en Mermaid
+
 ```mermaid
 flowchart TD
     Start([Usuario envía mensaje]) --> Pipeline[Pipeline.pipe]
     Pipeline --> CheckLangGraph{LangGraph<br/>disponible?}
     CheckLangGraph -->|No| ErrorLG[❌ Error: LangGraph no disponible]
     CheckLangGraph -->|Sí| ExtractMsg[Extraer mensaje del usuario]
-    ExtractMsg --> CheckGreeting{Es saludo<br/>o ayuda?}
-    CheckGreeting -->|Sí| DirectResponse[Respuesta directa amigable]
-    CheckGreeting -->|No| StartGraph[Iniciar LangGraph]
-    StartGraph --> NodeInput[Node: Input<br/>Recibe estado inicial]
-    NodeInput --> NodeSupervisor[Node: Supervisor<br/>Analiza la solicitud]
-    NodeSupervisor --> QuickDetect{Pregunta sobre<br/>BDs disponibles?}
-    QuickDetect -->|Sí| QuickAnswer[Respuesta directa<br/>con lista de BDs]
-    QuickDetect -->|No| CallOllama[Llamar a Ollama LLM]
-    CallOllama --> RetryLoop{Reintentos<br/>< MAX_RETRIES?}
-    RetryLoop -->|No| Fallback[Plan fallback:<br/>route=direct, mensaje de ayuda]
-    RetryLoop -->|Sí| PostOllama[POST a /api/generate]
-    PostOllama --> ParseResponse{Respuesta<br/>HTTP 200?}
-    ParseResponse -->|No| RetryLoop
-    ParseResponse -->|Sí| ExtractJSON[Extraer objeto JSON<br/>de la respuesta]
-    ExtractJSON --> ValidJSON{JSON<br/>válido?}
-    ValidJSON -->|No| RetryLoop
-    ValidJSON -->|Sí| FixErrors[Corregir errores comunes<br/>ej: pg_direct → direct]
-    FixErrors --> ValidatePlan[Validar plan]
-    ValidatePlan --> PlanValid{Plan<br/>válido?}
-    PlanValid -->|No| InvalidPlan[Plan inválido:<br/>route=direct con mensaje de ayuda]
-    PlanValid -->|Sí| SetRoute[Establecer route en el estado]
-    QuickAnswer --> SetRoute
-    Fallback --> SetRoute
-    InvalidPlan --> SetRoute
-    SetRoute --> RouteDecision{route en<br/>AGENTS?}
-    RouteDecision -->|No - direct| NodeDone[Node: Done<br/>Preparar respuesta final]
-    RouteDecision -->|Sí - pg_*| NodePostgres[Node: Postgres Agent<br/>Ejecutar consulta SQL]
-    NodePostgres --> CheckPsycopg2{psycopg2<br/>disponible?}
-    CheckPsycopg2 -->|No| DBError1[Error: psycopg2 no disponible]
-    CheckPsycopg2 -->|Sí| CheckReadOnly{SQL es<br/>solo lectura?}
-    CheckReadOnly -->|No| DBError2[Error: SQL no permitido<br/>solo SELECT/WITH]
-    CheckReadOnly -->|Sí| NormalizeSQL[Normalizar SQL<br/>agregar/validar LIMIT]
-    NormalizeSQL --> ConnectDB[Conectar a PostgreSQL<br/>readonly mode]
-    ConnectDB --> ExecuteSQL{Ejecución<br/>exitosa?}
-    ExecuteSQL -->|No| DBError3[Error de ejecución SQL]
-    ExecuteSQL -->|Sí| FetchRows[Obtener filas<br/>máximo MAX_LIMIT]
-    FetchRows --> CloseConn[Cerrar conexión]
-    CloseConn --> DBSuccess[Resultado exitoso<br/>con filas]
-    DBError1 --> NodeDone
-    DBError2 --> NodeDone
-    DBError3 --> NodeDone
-    DBSuccess --> NodeDone
-    NodeDone --> CheckRoute{Tipo de<br/>respuesta?}
-    CheckRoute -->|direct| FormatDirect[Formatear respuesta<br/>conversacional]
-    CheckRoute -->|query exitosa| FormatSuccess[Formatear resultado SQL<br/> con tabla y stats]
-    CheckRoute -->|query error| FormatError[Formatear mensaje error<br/> con detalles]
-    CheckRoute -->|query sin filas| FormatEmpty[Formatear mensaje<br/> sin resultados]
-    FormatDirect --> PrepareOutput[Preparar output final]
-    FormatSuccess --> PrepareOutput
-    FormatError --> PrepareOutput
-    FormatEmpty --> PrepareOutput
-    DirectResponse --> PrepareOutput
-    ErrorLG --> PrepareOutput
-    PrepareOutput --> StreamMode{Modo<br/>stream?}
-    StreamMode -->|Sí| SSEStream[Generar SSE chunks<br/>data: JSON]
-    StreamMode -->|No| NonStream[Generar respuesta completa<br/>JSON]
-    SSEStream --> Return([Retornar al usuario])
-    NonStream --> Return
+    ExtractMsg --> CheckSpecial{Es saludo,<br/>ayuda o contexto?}
+    CheckSpecial -->|Sí| DirectResponse[Respuesta directa]
+    CheckSpecial -->|No| BuildState[Construir estado inicial]
+    BuildState --> NodeInput[Node: input]
+    NodeInput --> NodeSupervisor[Node: supervisor]
+
+    NodeSupervisor --> RecoverContext[Recuperar BD desde historial]
+    RecoverContext --> DetectHeuristic{Heurística<br/>detectada?}
+    DetectHeuristic -->|Sí| PlanHeuristic[Plan heurístico]
+    DetectHeuristic -->|No| CallSupervisorLLM[Llamar a supervisor LLM]
+    CallSupervisorLLM --> ParseSupervisor[Extraer JSON]
+    ParseSupervisor --> ValidatePlan[Validar plan]
+
+    ValidatePlan --> RouteDecision{Decisión<br/>tras supervisor}
+    RouteDecision -->|done| NodeDone[Node: done]
+    RouteDecision -->|clarify| NodeClarify[Node: clarify]
+    RouteDecision -->|postgres| NodePostgres[Node: postgres]
+    RouteDecision -->|strategies| NodeStrategies[Node: generate_strategies]
+
+    NodeStrategies --> StrategyLLM[Generar 3 estrategias CoT]
+    StrategyLLM --> NodePostgres
+
+    NodePostgres --> CheckReadonly{SQL solo lectura?}
+    CheckReadonly -->|No| PostgresError[Error SQL]
+    CheckReadonly -->|Sí| ExecuteSQL[Ejecutar en agente PostgreSQL]
+
+    ExecuteSQL --> EvalPostgres{Resultado útil?}
+    EvalPostgres -->|Sí| NodeDone
+    EvalPostgres -->|next_strategy| NodeNextStrategy[Node: next_strategy]
+    EvalPostgres -->|alternative| NodeAlternative[Node: generate_alternative]
+    EvalPostgres -->|clarify| NodeClarify
+
+    NodeNextStrategy --> NodePostgres
+    NodeAlternative --> AltLLM[Generar alternativa CoT]
+    AltLLM --> NodePostgres
+
+    NodeClarify --> EndClarify([FIN: aclaración])
+    NodeDone --> EndDone([FIN: respuesta])
+
+    ErrorLG --> EndDone
+    DirectResponse --> EndDone
+
     style Start fill:#e1f5e1
-    style Return fill:#e1f5e1
+    style EndDone fill:#e1f5e1
+    style EndClarify fill:#fff3cd
     style ErrorLG fill:#ffe1e1
-    style DBError1 fill:#ffe1e1
-    style DBError2 fill:#ffe1e1
-    style DBError3 fill:#ffe1e1
-    style FormatError fill:#ffe1e1
-    style DBSuccess fill:#e1f0ff
-    style FormatSuccess fill:#e1f0ff
-    style DirectResponse fill:#fff9e1
-    style QuickAnswer fill:#fff9e1
-    style CallOllama fill:#f0e1ff
+    style PostgresError fill:#ffe1e1
     style NodeSupervisor fill:#f0e1ff
+    style CallSupervisorLLM fill:#f0e1ff
+    style NodeStrategies fill:#f0e1ff
+    style AltLLM fill:#f0e1ff
     style NodePostgres fill:#e1f0ff
     style NodeDone fill:#ffe1f5
+    style NodeClarify fill:#fff3cd
 ```
+
+---
+
+
 
 
