@@ -1,9 +1,9 @@
 ### E1: Bases de datos disponibles
 El usuario pregunta cuáles bases de datos hay disponibles
 
-Usuario: bases de datos disponibles
+#### Usuario: bases de datos disponibles
 
-Respuesta: 
+#### Respuesta: 
 📊 **Bases de datos disponibles:**
 
 • **postgres**: Base de datos principal del sistema PostgreSQL
@@ -27,9 +27,9 @@ Respuesta:
 ### E2: Consulta sobre una base de datos específica
 Para este caso el usuario consulta sobre la BD de trombofilia datos como las tablas disponibles, los nombres de las columnas de una tabla determinada y 10 registros de la misma tabla
 
-Usuario: ve a trombofilia
+#### Usuario: ve a trombofilia
 
-Respuesta:
+#### Respuesta:
 ✅ **Contexto cambiado a: trombofilia**
 
 📋 Datos relacionados con estudios de trombofilia
@@ -42,9 +42,9 @@ Ahora todas tus consultas usarán la base **trombofilia**.
 
 _Para cambiar: 'usa [otra_bd]'_
 
-Usuario: muestrame las tablas
+#### Usuario: muestrame las tablas
 
-Respuesta:
+#### Respuesta:
 ✅ **Encontré 4 registro(s)**
 
 **Base de datos:** trombofilia
@@ -62,9 +62,9 @@ public | tratamiento
 public | variables
 ```
 
-Usuario: muestrame las columnas de pacientes_ok
+#### Usuario: muestrame las columnas de pacientes_ok
 
-Respuesta:
+#### Respuesta:
 ✅ **Encontré 87 registro(s)**
 
 **Base de datos:** trombofilia
@@ -128,9 +128,9 @@ tv_l_ove
 fr_cance
 ```
 
-Usuario: dame 10 registros de pacientes_ok
+#### Usuario: dame 10 registros de pacientes_ok
 
-Respuesta:
+#### Respuesta:
 ✅ **Encontré 10 registro(s)**
 
 **Base de datos:** trombofilia
@@ -157,9 +157,9 @@ Mujer | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No |
 ### E3: Consultas ambiguas
 Distintos tipos de consultas ambiguas para ver cómo funciona el modelo
 
-Usuario: datos de tratamiento (tabla de trombofilia)
+#### Usuario: datos de tratamiento (tabla de trombofilia)
 
-Respuesta:
+#### Respuesta:
 ✅ **Encontré 10 registro(s)**
 
 **Base de datos:** trombofilia
@@ -183,9 +183,9 @@ id_pacie | id_trata | tipo_tra | num_trat | var6 | var8 | fecha_in | fecha_fi
 4 | 4 | Agudo | 1 | HBPM | 10000.0 | 2001-01-25 00:00:00 | 2001-01-27 00:00:00
 ```
 
-Usuario: quiero ver pacientes_ok (tabla de trombofilia)
+#### Usuario: quiero ver pacientes_ok (tabla de trombofilia)
 
-Respuesta:
+#### Respuesta:
 ✅ **Encontré 10 registro(s)**
 
 **Base de datos:** trombofilia
@@ -209,9 +209,9 @@ Hombre | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No 
 Mujer | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP | No | No | No | No | No | No | No | No | Normal | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Sí | No | Buscada positivo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Joven | Alto | Normal | No | Normal | Normal | Normal | Alto | No practicado | Normal
 ```
 
-Usuario: quiero datos de variable (la tabla de 1245)
+#### Usuario: quiero datos de variable (la tabla de 1245)
 
-Respuesta:
+#### Respuesta:
 ❌ **Error en la consulta:**
 permission denied for table variable
 
