@@ -1,7 +1,7 @@
 
 ---
 
-# Caso 4 - LLM implementado en forma de supervisor, con agentes especializados por base de datos y razonamiento estructurado mediante LangGraph + CoT
+# Caso - LLM implementado en forma de supervisor, con agentes especializados por base de datos y razonamiento estructurado mediante LangGraph + CoT (Chain of Thought)
 
 ## Objetivo
 
