@@ -153,3 +153,70 @@ Mujer | Caucásica | No | No | No | No | No | No | No | No | No | Sí | No | No 
 Hombre | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | EP | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Buscada negativo | No | Sí | No | No | No | Sí | Sí | No | No | No | No | No | No | No | No | Medio | Normal | Normal | No | Normal | Normal | Normal | Normal | Positivo | Elevada
 Mujer | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP | No | No | No | No | No | No | No | No | Normal | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Sí | No | Buscada positivo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Joven | Alto | Normal | No | Normal | Normal | Normal | Alto | No practicado | Normal
 ```
+
+### E3: Consultas ambiguas
+Distintos tipos de consultas ambiguas para ver cómo funciona el modelo
+
+Usuario: datos de tratamiento (tabla de trombofilia)
+
+Respuesta:
+✅ **Encontré 10 registro(s)**
+
+**Base de datos:** trombofilia
+**SQL usado:**
+```sql
+SELECT * FROM "tratamiento" LIMIT 10;
+```
+
+```
+id_pacie | id_trata | tipo_tra | num_trat | var6 | var8 | fecha_in | fecha_fi
+---------+----------+----------+----------+------+------+----------+---------
+2 | 1161 | Largo Plazo | 1 | OTROS | None | 2001-03-26 00:00:00 | 2001-07-27 00:00:00
+2 | 1162 | Agudo | 1 | HBPM | 10000.0 | 2001-03-16 00:00:00 | 2001-03-26 00:00:00
+3 | 1 | Largo Plazo | 1 | HBPM | 5000.0 | 2001-01-25 00:00:00 | 2001-01-27 00:00:00
+3 | 2 | Agudo | 1 | HBPM | 10000.0 | 2001-01-12 00:00:00 | 2001-01-15 00:00:00
+3 | 6793 | Agudo | 2 | HBPM | 2500.0 | 2001-01-15 00:00:00 | 2001-01-21 00:00:00
+3 | 10225 | Agudo | 3 | HBPM | 2500.0 | 2001-01-23 00:00:00 | 2001-01-24 00:00:00
+3 | 10226 | Largo Plazo | 2 | HBPM | 7500.0 | 2001-01-27 00:00:00 | 2001-01-30 00:00:00
+3 | 10227 | Largo Plazo | 3 | HBPM | 10000.0 | 2001-01-30 00:00:00 | 2001-04-12 00:00:00
+4 | 3 | Largo Plazo | 1 | HBPM | 10000.0 | 2001-01-28 00:00:00 | 2001-05-08 00:00:00
+4 | 4 | Agudo | 1 | HBPM | 10000.0 | 2001-01-25 00:00:00 | 2001-01-27 00:00:00
+```
+
+Usuario: quiero ver pacientes_ok (tabla de trombofilia)
+
+Respuesta:
+✅ **Encontré 10 registro(s)**
+
+**Base de datos:** trombofilia
+**SQL usado:**
+```sql
+SELECT * FROM "pacientes_ok" LIMIT 10;
+```
+
+```
+sexo | raza | ant_inf | ant_isq | ant_clau | fum_act | diabetes | hip_art | insf_car | fibr_aur | trat_est | e_con_pp | e_con_cu | e_con_ec | e_con_lu | e_con_af | e_con_be | e_con_at | e_con_va | e_con_ar | e_con_ea | e_con_pr | e_con_ro | e_con_av | e_con_sm | sin_tvp_ | var171 | ep_tac_r | eptacven | ep_t_reg | ep_ecoca | ep_eco_v | var52 | epecoddv | tvp_eco_ | tv_l_esu | tv_l_ein | tv_l_vpo | tv_l_vme | tv_l_ves | tv_l_svc | tv_l_vre | tv_l_vrn | tv_l_vca | tv_l_yug | tv_l_ova | tv_l_sup | tv_l_pul | tv_l_ove | fr_cance | fr_cirug | fr_inmov | fr_tvp_a | fr_antfa | fr_tvs_a | fr_viaje | fr_estro | fr_embar | fr_varic | fr_antec | ana_trop | ana_dura | evn_defu | evn_reci | evn_rec2 | evn_rec3 | evn_rec4 | evn_hemo | evn_hem2 | evn_hem3 | evn_hem4 | eisq_art | eisq_inf | eisq_ang | eisq_cer | eisq_ei | eisq_ol | edadC | pesoC | tensionC | fr_can_eC | ana_hemoC | ana_plaqC | ana_neuC | ana_leucC | ana_dimeC | ana_creaC
+-----+------+---------+---------+----------+---------+----------+---------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+--------+----------+----------+----------+----------+----------+-------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+----------+---------+---------+-------+-------+----------+-----------+-----------+-----------+----------+-----------+-----------+----------
+Mujer | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP | No | No | No | No | No | No | No | No | Trombosis | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Sí | No | No | No | No | No | No | No | No | Buscada negativo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Senior | Normal | Normal | No | Normal | Normal | Normal | Normal | Positivo | Normal
+Hombre | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP | No | No | No | No | No | No | No | No | Trombosis | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | Sí | No | Sí | Sí | No | No | No | No | No | Sí | No | No | Buscada negativo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Senior | Normal | Normal | Sin metástasis | Bajo | Bajo | Normal | Alto | Positivo | Normal
+Mujer | Caucásica | No | No | No | No | No | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP | No | No | No | No | No | No | No | No | Trombosis | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Sí | No | No | No | No | No | No | No | No | No | Buscada negativo | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Senior | Normal | Normal | No | Normal | Normal | Normal | Alto | No practicado | Normal
+Hombre | Caucásica | No | No | No | No | No | No | No | No | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP/EP | No | No | No | No | No | No | No | No | Trombosis | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Buscada negativo | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | Senior | Normal | Normal | No | Bajo | Normal | Normal | Normal | Positivo | Elevada
+Hombre | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | EP | No | Normal | No | No | No | No | No | No | Normal | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Sí | No | No | No | No | No | Sí | No | No | Buscada negativo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Medio | Normal | Normal | No | Normal | Bajo | Normal | Normal | Negativo | Normal
+Mujer | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP | No | No | No | No | No | No | No | No | Trombosis | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Sí | Sí | No | No | No | No | No | No | No | No | Buscada positivo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Medio | Normal | Normal | No | Normal | Normal | Normal | Normal | Positivo | Normal
+Hombre | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP | No | No | No | No | No | No | No | No | Normal | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Buscada negativo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Joven | Normal | Normal | No | Normal | Normal | Normal | Normal | No practicado | Normal
+Mujer | Caucásica | No | No | No | No | No | No | No | No | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | EP | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Buscada negativo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Joven | Normal | Normal | No | Normal | Normal | Normal | Normal | No practicado | Normal
+Hombre | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | EP | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Buscada negativo | No | Sí | No | No | No | Sí | Sí | No | No | No | No | No | No | No | No | Medio | Normal | Normal | No | Normal | Normal | Normal | Normal | Positivo | Elevada
+Mujer | Caucásica | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | TVP | No | No | No | No | No | No | No | No | Normal | No | Sí | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Sí | No | Buscada positivo | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No | Joven | Alto | Normal | No | Normal | Normal | Normal | Alto | No practicado | Normal
+```
+
+Usuario: quiero datos de variable (la tabla de 1245)
+
+Respuesta:
+❌ **Error en la consulta:**
+permission denied for table variable
+
+
+**SQL ejecutado:**
+```sql
+SELECT * FROM "variable" LIMIT 10;
+```
