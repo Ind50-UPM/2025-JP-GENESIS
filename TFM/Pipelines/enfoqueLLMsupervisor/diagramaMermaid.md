@@ -4,77 +4,58 @@ flowchart TD
     Pipeline --> CheckLangGraph{LangGraph<br/>disponible?}
     CheckLangGraph -->|No| ErrorLG[❌ Error: LangGraph no disponible]
     CheckLangGraph -->|Sí| ExtractMsg[Extraer mensaje del usuario]
-    ExtractMsg --> CheckGreeting{Es saludo<br/>o ayuda?}
-    CheckGreeting -->|Sí| DirectResponse[Respuesta directa amigable]
-    CheckGreeting -->|No| StartGraph[Iniciar LangGraph]
-    StartGraph --> NodeInput[Node: Input<br/>Recibe estado inicial]
-    NodeInput --> NodeSupervisor[Node: Supervisor<br/>Analiza la solicitud]
-    NodeSupervisor --> QuickDetect{Pregunta sobre<br/>BDs disponibles?}
-    QuickDetect -->|Sí| QuickAnswer[Respuesta directa<br/>con lista de BDs]
-    QuickDetect -->|No| CallOllama[Llamar a Ollama LLM]
-    CallOllama --> RetryLoop{Reintentos<br/>< MAX_RETRIES?}
-    RetryLoop -->|No| Fallback[Plan fallback:<br/>route=direct, mensaje de ayuda]
-    RetryLoop -->|Sí| PostOllama[POST a /api/generate]
-    PostOllama --> ParseResponse{Respuesta<br/>HTTP 200?}
-    ParseResponse -->|No| RetryLoop
-    ParseResponse -->|Sí| ExtractJSON[Extraer objeto JSON<br/>de la respuesta]
-    ExtractJSON --> ValidJSON{JSON<br/>válido?}
-    ValidJSON -->|No| RetryLoop
-    ValidJSON -->|Sí| FixErrors[Corregir errores comunes<br/>ej: pg_direct → direct]
-    FixErrors --> ValidatePlan[Validar plan]
-    ValidatePlan --> PlanValid{Plan<br/>válido?}
-    PlanValid -->|No| InvalidPlan[Plan inválido:<br/>route=direct con mensaje de ayuda]
-    PlanValid -->|Sí| SetRoute[Establecer route en el estado]
-    QuickAnswer --> SetRoute
-    Fallback --> SetRoute
-    InvalidPlan --> SetRoute
-    SetRoute --> RouteDecision{route en<br/>AGENTS?}
-    RouteDecision -->|No - direct| NodeDone[Node: Done<br/>Preparar respuesta final]
-    RouteDecision -->|Sí - pg_*| NodePostgres[Node: Postgres Agent<br/>Ejecutar consulta SQL]
-    NodePostgres --> CheckPsycopg2{psycopg2<br/>disponible?}
-    CheckPsycopg2 -->|No| DBError1[Error: psycopg2 no disponible]
-    CheckPsycopg2 -->|Sí| CheckReadOnly{SQL es<br/>solo lectura?}
-    CheckReadOnly -->|No| DBError2[Error: SQL no permitido<br/>solo SELECT/WITH]
-    CheckReadOnly -->|Sí| NormalizeSQL[Normalizar SQL<br/>agregar/validar LIMIT]
-    NormalizeSQL --> ConnectDB[Conectar a PostgreSQL<br/>readonly mode]
-    ConnectDB --> ExecuteSQL{Ejecución<br/>exitosa?}
-    ExecuteSQL -->|No| DBError3[Error de ejecución SQL]
-    ExecuteSQL -->|Sí| FetchRows[Obtener filas<br/>máximo MAX_LIMIT]
-    FetchRows --> CloseConn[Cerrar conexión]
-    CloseConn --> DBSuccess[Resultado exitoso<br/>con filas]
-    DBError1 --> NodeDone
-    DBError2 --> NodeDone
-    DBError3 --> NodeDone
-    DBSuccess --> NodeDone
-    NodeDone --> CheckRoute{Tipo de<br/>respuesta?}
-    CheckRoute -->|direct| FormatDirect[Formatear respuesta<br/>conversacional]
-    CheckRoute -->|query exitosa| FormatSuccess[Formatear resultado SQL<br/> con tabla y stats]
-    CheckRoute -->|query error| FormatError[Formatear mensaje error<br/> con detalles]
-    CheckRoute -->|query sin filas| FormatEmpty[Formatear mensaje<br/> sin resultados]
-    FormatDirect --> PrepareOutput[Preparar output final]
-    FormatSuccess --> PrepareOutput
-    FormatError --> PrepareOutput
-    FormatEmpty --> PrepareOutput
-    DirectResponse --> PrepareOutput
-    ErrorLG --> PrepareOutput
-    PrepareOutput --> StreamMode{Modo<br/>stream?}
-    StreamMode -->|Sí| SSEStream[Generar SSE chunks<br/>data: JSON]
-    StreamMode -->|No| NonStream[Generar respuesta completa<br/>JSON]
-    SSEStream --> Return([Retornar al usuario])
-    NonStream --> Return
+    ExtractMsg --> CheckSpecial{Es saludo,<br/>ayuda o contexto?}
+    CheckSpecial -->|Sí| DirectResponse[Respuesta directa]
+    CheckSpecial -->|No| BuildState[Construir estado inicial]
+    BuildState --> NodeInput[Node: input]
+    NodeInput --> NodeSupervisor[Node: supervisor]
+
+    NodeSupervisor --> RecoverContext[Recuperar BD desde historial]
+    RecoverContext --> DetectHeuristic{Heurística<br/>detectada?}
+    DetectHeuristic -->|Sí| PlanHeuristic[Plan heurístico]
+    DetectHeuristic -->|No| CallSupervisorLLM[Llamar a supervisor LLM]
+    CallSupervisorLLM --> ParseSupervisor[Extraer JSON]
+    ParseSupervisor --> ValidatePlan[Validar plan]
+
+    ValidatePlan --> RouteDecision{Decisión<br/>tras supervisor}
+    RouteDecision -->|done| NodeDone[Node: done]
+    RouteDecision -->|clarify| NodeClarify[Node: clarify]
+    RouteDecision -->|postgres| NodePostgres[Node: postgres]
+    RouteDecision -->|strategies| NodeStrategies[Node: generate_strategies]
+
+    NodeStrategies --> StrategyLLM[Generar 3 estrategias CoT]
+    StrategyLLM --> NodePostgres
+
+    NodePostgres --> CheckReadonly{SQL solo lectura?}
+    CheckReadonly -->|No| PostgresError[Error SQL]
+    CheckReadonly -->|Sí| ExecuteSQL[Ejecutar en agente PostgreSQL]
+
+    ExecuteSQL --> EvalPostgres{Resultado útil?}
+    EvalPostgres -->|Sí| NodeDone
+    EvalPostgres -->|next_strategy| NodeNextStrategy[Node: next_strategy]
+    EvalPostgres -->|alternative| NodeAlternative[Node: generate_alternative]
+    EvalPostgres -->|clarify| NodeClarify
+
+    NodeNextStrategy --> NodePostgres
+    NodeAlternative --> AltLLM[Generar alternativa CoT]
+    AltLLM --> NodePostgres
+
+    NodeClarify --> EndClarify([FIN: aclaración])
+    NodeDone --> EndDone([FIN: respuesta])
+
+    ErrorLG --> EndDone
+    DirectResponse --> EndDone
+
     style Start fill:#e1f5e1
-    style Return fill:#e1f5e1
+    style EndDone fill:#e1f5e1
+    style EndClarify fill:#fff3cd
     style ErrorLG fill:#ffe1e1
-    style DBError1 fill:#ffe1e1
-    style DBError2 fill:#ffe1e1
-    style DBError3 fill:#ffe1e1
-    style FormatError fill:#ffe1e1
-    style DBSuccess fill:#e1f0ff
-    style FormatSuccess fill:#e1f0ff
-    style DirectResponse fill:#fff9e1
-    style QuickAnswer fill:#fff9e1
-    style CallOllama fill:#f0e1ff
+    style PostgresError fill:#ffe1e1
     style NodeSupervisor fill:#f0e1ff
+    style CallSupervisorLLM fill:#f0e1ff
+    style NodeStrategies fill:#f0e1ff
+    style AltLLM fill:#f0e1ff
     style NodePostgres fill:#e1f0ff
     style NodeDone fill:#ffe1f5
+    style NodeClarify fill:#fff3cd
 ```
