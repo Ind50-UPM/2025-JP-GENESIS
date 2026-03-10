@@ -8,6 +8,6 @@
 - Tools: PostgreSQL (lectura) con validación de intención (para prevenir alteraciones en la base de datos a consultar)
 
 ## Control del flujo
-Actualmente el controlador es el grafo (LangGraph). El LLM se integra como nodo para tareas generativas como la conversión de NL a SQL.
+Actualmente el controlador es el LLM. El LLM es capaz de decidir cuál es la ruta a seguir para responder a la consulta hecha por el usuario.
 
-Siguiente paso: Lograr que el LLM seleccione herramientas/agentes explícitamente, manteniendo LangGraph como orquestador. La manera en la que se podrìa lograr esto es mediante el uso de tool calling.
+Siguiente paso: Lograr que el LLM tenga una mayor libertad de decisión, ya que actualmente los caminos que toma el LLM son bastante estrictos y limitados.
